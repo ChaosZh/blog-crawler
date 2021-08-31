@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/kjk/notionapi"
@@ -10,15 +11,14 @@ import (
 )
 
 type MarkdownFile struct {
-	Title			interface{}
-	Content			string
+	Title			string
+	Content			[]byte
 	Tags			interface{}
 	LastEditedTime	string
 }
 
-func (markdown *MarkdownFile) toFile() {
-	//cacheFolder := "./cache"
-	
+func (markdown MarkdownFile) toFile(folder string) {
+	_ = os.WriteFile(folder + "/" + markdown.Title + ".md", markdown.Content, 0644)
 }
 
 var client = &notionapi.Client{}
@@ -46,29 +46,36 @@ func getMarkdownsFromArchivedPage(archivedPage *notionapi.Page) ([]MarkdownFile)
 
 
 		title := row.Page.Properties["title"]
-		content := string(tomarkdown.ToMarkdown(page))
+		content := tomarkdown.ToMarkdown(page)
 		tags := row.Page.Properties["OpfN"]
 		time := time.Unix(0, row.Page.LastEditedTime * int64(time.Millisecond)).Format("2006-01-02 15:04:05")
 
-		res := MarkdownFile {title, content, tags, time}
+		res := MarkdownFile {fmt.Sprint(title), content, tags, time}
 
 		markdowns = append(markdowns, res)
-		break
+		//break
 	}
 	return markdowns
 }
 
+func cacheMarkdowns(markdowns []MarkdownFile){
+	for _, mdx := range markdowns {
+		mdx.toFile("./cache")
+	}
+}
+
 func print(obj interface{}) {
-	fmt.Printf("chaoszh:\n %+v \n", obj)
+	fmt.Printf("%+v \n", obj)
 	//fmt.Println(json.MarshalIndent(obj, "", "\t"))
 }
 
 func main() {
 	arcPage, _ := getArchivedPage()
 	markdowns := getMarkdownsFromArchivedPage(arcPage)
+	cacheMarkdowns(markdowns)
 	//print(markdowns[0])
-	fmt.Println(markdowns[0].Tags.([]interface{})[0].([]interface{})[0])
-	fmt.Println(markdowns[0].Title.([]interface{})[0].([]interface{}))
+	//fmt.Println(markdowns[0].Tags.([]interface{})[0].([]interface{})[0])
+	//fmt.Println(markdowns[0].Title.([]interface{})[0].([]interface{}))
 	//s:=reflect.ValueOf(&markdowns[0]).Elem()
 	//for i := 0; i < s.NumField(); i++ {
 	//	f := s.Field(i)
