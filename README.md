@@ -6,3 +6,4 @@
 
 - procedure change: a genetic procedure for one page
 - cached detect: support update only when lastModified is newer
+    - strategy: last edit time 

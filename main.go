@@ -3,84 +3,95 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
+	"strings"
 	"time"
 
+	"github.com/chaoszh/blog-crawler/pkg/note"
 	"github.com/kjk/notionapi"
 	"github.com/kjk/notionapi/tomarkdown"
 )
 
-type MarkdownFile struct {
-	Title			string
-	Content			[]byte
-	Tags			interface{}
-	LastEditedTime	string
-}
-
-func (markdown MarkdownFile) toFile(folder string) {
-	_ = os.WriteFile(folder + "/" + markdown.Title + ".md", markdown.Content, 0644)
-}
 
 var client = &notionapi.Client{}
 var datasetId = "deba983740544616a2b8b399087ad180"
 
-func getArchivedPage() (*notionapi.Page, error) {
-	page, err := client.DownloadPage(datasetId)
+var xmapper = map[string]string {
+	"Title": "title",
+	"Tags": "OpfN",
+	"Status": "Nm\\r",
+	"isPrivate": "__lm",
+}
+
+type NoteCollection []note.Note
+
+func getNotes() ([]note.Note, error) {
+
+	notes := make([]note.Note, 0)
+
+	archivedPage, err := client.DownloadPage(datasetId)
 	if err != nil {
 		log.Fatalf("Failed at %s\n", err)
 		return nil, err
-	} else {
-		return page, nil
 	}
-}
-
-func getMarkdownsFromArchivedPage(archivedPage *notionapi.Page) ([]MarkdownFile) {
-	//table_view := archivedPage.Root().Content[0]
-	//print(archivedPage.TableViews)
 	catalogue := archivedPage.TableViews[0]
-	markdowns := []MarkdownFile{}
-	for idx, row := range catalogue.Rows {
-		print("dealing with " + fmt.Sprint(idx))
-		nid := row.Page.GetNotionID().NoDashID
-		page, _ := client.DownloadPage(nid)
 
+	for _, row := range catalogue.Rows {
+		meta := note.NoteMeta{}		
+		meta.Id = row.Page.GetNotionID().NoDashID
+		meta.LastEditedTime = time.Unix(0, row.Page.LastEditedTime * int64(time.Millisecond)).Format("2006-01-02 15:04:05")
+		for k, v := range xmapper {
+			property := row.Page.Properties[v]
+			if property != nil {
+				property = property.([]interface{})[0]	//extract data from notion result
+				property = property.([]interface{})[0]
+				switch k{
+				case "Title":
+					meta.Title = property.(string)
+				case "Status":
+					meta.Status = property.(string)
+				case "Tags":
+					meta.Tags = strings.Split(property.(string), ",")
+				case "isPrivate":
+					meta.IsPrivate = property.(string) == "Yes"
+				}
+			}
+		}
 
-		title := row.Page.Properties["title"]
-		content := tomarkdown.ToMarkdown(page)
-		tags := row.Page.Properties["OpfN"]
-		time := time.Unix(0, row.Page.LastEditedTime * int64(time.Millisecond)).Format("2006-01-02 15:04:05")
-
-		res := MarkdownFile {fmt.Sprint(title), content, tags, time}
-
-		markdowns = append(markdowns, res)
-		//break
+		notes = append(notes, note.Note{
+			Meta: meta,
+			Content: nil,
+		})
 	}
-	return markdowns
+
+	return notes, nil
 }
 
-func cacheMarkdowns(markdowns []MarkdownFile){
-	for _, mdx := range markdowns {
-		mdx.toFile("./cache")
-	}
-}
+type CacheStrategy int
 
-func print(obj interface{}) {
-	fmt.Printf("%+v \n", obj)
-	//fmt.Println(json.MarshalIndent(obj, "", "\t"))
+const (
+	All = iota
+	Update
+)
+
+func cacheNotes(notes []note.Note, strategy CacheStrategy) {
+	// Todo: add update stratrgy, compare local cached with new note.metas, update local cached
+	if strategy == All {
+		for _, n := range notes {
+			page, err := client.DownloadPage(n.Meta.Id)
+			if err != nil {
+				fmt.Println("Something wrong when downloading page...")
+			}
+			n.Content = tomarkdown.ToMarkdown(page)
+			n.Dump("./cache")
+		}
+	}
 }
 
 func main() {
-	arcPage, _ := getArchivedPage()
-	markdowns := getMarkdownsFromArchivedPage(arcPage)
-	cacheMarkdowns(markdowns)
-	//print(markdowns[0])
-	//fmt.Println(markdowns[0].Tags.([]interface{})[0].([]interface{})[0])
-	//fmt.Println(markdowns[0].Title.([]interface{})[0].([]interface{}))
-	//s:=reflect.ValueOf(&markdowns[0]).Elem()
-	//for i := 0; i < s.NumField(); i++ {
-	//	f := s.Field(i)
-	//	fmt.Printf("%d: %s %s = %v\n", i,
-	//		s.Type().Field(i).Name, f.Type(), f.Interface())
-	//}
-	//print()
+	notes, _ := getNotes()
+	//fmt.Printf("%+v \n", notes) // debug
+
+	cacheNotes(notes, All)
+	//markdowns := getMarkdownsFromArchivedPage(arcPage)
+	//cacheMarkdowns(markdowns)
 }
