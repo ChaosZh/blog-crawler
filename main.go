@@ -22,9 +22,12 @@ var xmapper = map[string]string {
 	"isPrivate": "__lm",
 }
 
-type NoteCollection []note.Note
+func logger (message string) {
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), message)
+}
 
 func getNotes() ([]note.Note, error) {
+	logger("1) Get all note metadata from notion.")
 
 	notes := make([]note.Note, 0)
 
@@ -63,6 +66,7 @@ func getNotes() ([]note.Note, error) {
 		})
 	}
 
+	logger("   Done")
 	return notes, nil
 }
 
@@ -74,24 +78,28 @@ const (
 )
 
 func cacheNotes(notes []note.Note, strategy CacheStrategy) {
+	logger("2) Cache all notes.")
+
 	// Todo: add update stratrgy, compare local cached with new note.metas, update local cached
 	if strategy == All {
-		for _, n := range notes {
+		for idx, n := range notes {
 			page, err := client.DownloadPage(n.Meta.Id)
 			if err != nil {
 				fmt.Println("Something wrong when downloading page...")
 			}
 			n.Content = tomarkdown.ToMarkdown(page)
 			n.Dump("./cache")
+
+			msg := fmt.Sprintf("   Finish %d/%d", idx, len(notes))
+			logger(msg)
 		}
 	}
+
+	logger("   Done")
 }
 
 func main() {
+	logger("Start blog-crawler...")
 	notes, _ := getNotes()
-	//fmt.Printf("%+v \n", notes) // debug
-
 	cacheNotes(notes, All)
-	//markdowns := getMarkdownsFromArchivedPage(arcPage)
-	//cacheMarkdowns(markdowns)
 }
