@@ -17,23 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-release@v1
-      - id: create_release
-      - with:
+        id: create_release
+        with:
           draft: false
           prerelease: false
           release_name: ${{ steps.version.outputs.version }}
           tag_name: ${{ github.ref }}
           body_path: CHANGELOG.md
-      - env:
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   upload-release-assets:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/upload-release-asset@v1
-      - env: 
+        env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - with:
+        with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./cache.zip
           asset_name: cache.zip
