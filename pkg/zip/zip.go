@@ -12,7 +12,7 @@ import (
 func ZipFolder(foldername string) error {
     files := make([]string, 0)
     filepath.Walk(foldername, func (path string, info os.FileInfo, err error) error {
-        if (!info.IsDir()) {
+        if ( info != nil && !info.IsDir()) {
             files = append(files, path)
         }
         return nil
