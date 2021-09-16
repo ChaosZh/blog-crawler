@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/chaoszh/blog-crawler/pkg/note"
+	"github.com/chaoszh/blog-crawler/pkg/zip"
 	"github.com/kjk/notionapi"
 	"github.com/kjk/notionapi/tomarkdown"
 )
@@ -102,4 +103,5 @@ func main() {
 	logger("Start blog-crawler...")
 	notes, _ := getNotes()
 	cacheNotes(notes, All)
+	zip.ZipFolder("cache")
 }
