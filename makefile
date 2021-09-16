@@ -7,5 +7,6 @@ env:
 
 build: env
 	@echo "Make build"
+	@mkdir -p cache/content cache/meta
 	@go run ./main.go
-	@cd ./cache; zip ../cache.zip .; cd ..;
+	@cd ./cache; zip -r ../cache.zip .; cd ..;
