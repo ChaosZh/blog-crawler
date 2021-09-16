@@ -8,3 +8,4 @@ env:
 build: env
 	@echo "Make build"
 	@go run ./main.go
+	@cd ./cache; zip ../cache.zip .; cd ..;

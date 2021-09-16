@@ -7,37 +7,27 @@ on:
 
 jobs:
   build:
-    name: Create Release
+    name: Upload Release Asset
     runs-on: ubuntu-latest
-    steps: 
-      - name: setup-env
-        uses: actions/setup-go@v2
-          with:
-            go-version: '1.17.1'
-
-      - name: crawl-blogs
+    steps:
+      - name: Checkout code
         uses: actions/checkout@v2
+      - name: Build project
         run: make
-
-      - name: time_log
-        run: date
-          id: time_log
-
-      - name: create-release
+      - name: Create Release
+        id: create_release
         uses: actions/create-release@v1
-          id: create_release
-        with:
-          draft: false
-          prerelease: false
-          release_name: ${{ steps.time_log.outputs.time_log }}
-          tag_name: Release ${{ github.ref }}
-          body_path: ${{ steps.time_log.outputs.time_log }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: upload-release-assets
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        id: upload-release-asset 
         uses: actions/upload-release-asset@v1
-        env: 
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
