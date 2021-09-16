@@ -6,35 +6,35 @@ on:
       - master
 
 jobs:
-  crawl-blogs:
+  build:
+    name: Create Release
     runs-on: ubuntu-latest
     steps: 
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: '1.17.1'
-      - run: make
-  
-  create-release:
-    runs-on: ubuntu-latest
-    steps:
-      - run: date
-        id: time_log
-      - uses: actions/create-release@v1
-        id: create_release
+      - name: crawl-blogs
+        uses: actions/checkout@v2
+        uses: actions/setup-go@v2
+          with:
+            go-version: '1.17.1'
+        run: make
+
+      - name: time_log
+        run: date
+          id: time_log
+
+      - name: create-release
+        uses: actions/create-release@v1
+          id: create_release
         with:
           draft: false
           prerelease: false
           release_name: ${{ steps.time_log.outputs.time_log }}
-          tag_name: ${{ github.ref }}
+          tag_name: Release ${{ github.ref }}
           body_path: ${{ steps.time_log.outputs.time_log }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  upload-release-assets:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/upload-release-asset@v1
+      - name: upload-release-assets
+        uses: actions/upload-release-asset@v1
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
