@@ -11,19 +11,22 @@ jobs:
     steps: 
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
+        go-version: '1.17.1'
       - run: make
   
   create-release:
     runs-on: ubuntu-latest
     steps:
+      - run: date
+        id: time_log
       - uses: actions/create-release@v1
         id: create_release
         with:
           draft: false
           prerelease: false
-          release_name: ${{ steps.version.outputs.version }}
+          release_name: ${{ steps.time_log.outputs.time_log }}
           tag_name: ${{ github.ref }}
-          body_path: CHANGELOG.md
+          body_path: ${{ steps.time_log.outputs.time_log }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
