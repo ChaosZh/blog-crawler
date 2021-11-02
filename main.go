@@ -6,23 +6,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chaoszh/blog-crawler/pkg/note"
+	note "github.com/chaoszh/blog-crawler/pkg/model"
 	"github.com/kjk/notionapi"
 	"github.com/kjk/notionapi/tomarkdown"
 )
 
-
 var client = &notionapi.Client{}
 var datasetId = "deba983740544616a2b8b399087ad180"
 
-var xmapper = map[string]string {
-	"Title": "title",
-	"Tags": "OpfN",
-	"Status": "Nm\\r",
+var xmapper = map[string]string{
+	"Title":     "title",
+	"Tags":      "OpfN",
+	"Status":    "Nm\\r",
 	"isPrivate": "__lm",
 }
 
-func logger (message string) {
+func logger(message string) {
 	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), message)
 }
 
@@ -39,15 +38,15 @@ func getNotes() ([]note.Note, error) {
 	catalogue := archivedPage.TableViews[0]
 
 	for _, row := range catalogue.Rows {
-		meta := note.NoteMeta{}		
+		meta := note.Meta{}
 		meta.Id = row.Page.GetNotionID().NoDashID
-		meta.LastEditedTime = time.Unix(0, row.Page.LastEditedTime * int64(time.Millisecond)).Format("2006-01-02 15:04:05")
+		meta.LastEditedTime = time.Unix(0, row.Page.LastEditedTime*int64(time.Millisecond)).Format("2006-01-02 15:04:05")
 		for k, v := range xmapper {
 			property := row.Page.Properties[v]
 			if property != nil {
-				property = property.([]interface{})[0]	//extract data from notion result
+				property = property.([]interface{})[0] //extract data from notion result
 				property = property.([]interface{})[0]
-				switch k{
+				switch k {
 				case "Title":
 					meta.Title = property.(string)
 				case "Status":
@@ -61,7 +60,7 @@ func getNotes() ([]note.Note, error) {
 		}
 
 		notes = append(notes, note.Note{
-			Meta: meta,
+			Meta:    meta,
 			Content: nil,
 		})
 	}

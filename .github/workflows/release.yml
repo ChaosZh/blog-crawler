@@ -2,7 +2,7 @@ name: Create release
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * 6' # weekly apply
   push:
     branches:
       - master
@@ -16,9 +16,16 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.17.1'
-      - name: Time logger
-        id: time_logger
-        run: echo "::set-output name=current_time::$(date)"
+      - name: Set uuid
+        id: generate-uuid
+        uses: filipstefansson/uuid-action@v1
+        with:
+          name: ${{ gihub.sha }}
+      - name: Set time
+        id: generate-time
+        uses: ajilraju/actions-date@v0.1
+        with:
+          date +%m%d
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build project
@@ -30,8 +37,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ steps.time_logger.outputs.current_time }}
+          tag_name: ${{ steps.generate-uuid.outputs.uuid }}
+          release_name: Release ${{ steps.generate-time.outputs.date }}
           draft: false
           prerelease: false
       - name: Upload Release Asset
