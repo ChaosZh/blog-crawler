@@ -22,10 +22,8 @@ jobs:
         with:
           name: ${{ github.sha }}
       - name: Set time
+        uses: gerred/actions/current-time@master
         id: generate-time
-        uses: ajilraju/actions-date@v0.1
-        with:
-          date +%m%d
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build project
@@ -38,7 +36,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.generate-uuid.outputs.uuid }}
-          release_name: Release ${{ steps.generate-time.outputs.date }}
+          release_name: Release ${{ steps.generate-time.outputs.time }}
           draft: false
           prerelease: false
       - name: Upload Release Asset
