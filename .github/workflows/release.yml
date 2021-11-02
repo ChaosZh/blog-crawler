@@ -20,7 +20,7 @@ jobs:
         id: generate-uuid
         uses: filipstefansson/uuid-action@v1
         with:
-          name: ${{ gihub.sha }}
+          name: ${{ github.sha }}
       - name: Set time
         id: generate-time
         uses: ajilraju/actions-date@v0.1
