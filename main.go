@@ -12,7 +12,10 @@ import (
 )
 
 var client = &notionapi.Client{}
-var datasetId = "deba983740544616a2b8b399087ad180"
+
+func logger(message string) {
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), message)
+}
 
 var xmapper = map[string]string{
 	"Title":     "title",
@@ -21,30 +24,28 @@ var xmapper = map[string]string{
 	"isPrivate": "__lm",
 }
 
-func logger(message string) {
-	fmt.Println(time.Now().Format("2006-01-02 15:04:05"), message)
-}
-
-func getNotes() ([]note.Note, error) {
-	logger("1) Get all note metadata from notion.")
+func getNotes(pageid string) ([]note.Note, error) {
+	logger("get all notes from notion")
 
 	notes := make([]note.Note, 0)
 
-	archivedPage, err := client.DownloadPage(datasetId)
+	archivedPage, err := client.DownloadPage(pageid)
 	if err != nil {
 		log.Fatalf("Failed at %s\n", err)
 		return nil, err
 	}
-	catalogue := archivedPage.TableViews[0]
 
+	catalogue := archivedPage.TableViews[0]
 	for _, row := range catalogue.Rows {
 		meta := note.Meta{}
 		meta.Id = row.Page.GetNotionID().NoDashID
 		meta.LastEditedTime = time.Unix(0, row.Page.LastEditedTime*int64(time.Millisecond)).Format("2006-01-02 15:04:05")
+
+		//extract data from notion result
 		for k, v := range xmapper {
 			property := row.Page.Properties[v]
 			if property != nil {
-				property = property.([]interface{})[0] //extract data from notion result
+				property = property.([]interface{})[0]
 				property = property.([]interface{})[0]
 				switch k {
 				case "Title":
@@ -65,40 +66,26 @@ func getNotes() ([]note.Note, error) {
 		})
 	}
 
-	logger("   Done")
 	return notes, nil
 }
 
-type CacheStrategy int
-
-const (
-	All = iota
-	Update
-)
-
-func cacheNotes(notes []note.Note, strategy CacheStrategy) {
-	logger("2) Cache all notes.")
-
-	// Todo: add update stratrgy, compare local cached with new note.metas, update local cached
-	if strategy == All {
-		for idx, n := range notes {
-			page, err := client.DownloadPage(n.Meta.Id)
-			if err != nil {
-				fmt.Println("Something wrong when downloading page...")
-			}
-			n.Content = tomarkdown.ToMarkdown(page)
-			n.Dump("./cache")
-
-			msg := fmt.Sprintf("   Finish %d/%d", idx, len(notes))
-			logger(msg)
+func downloadNotes(notes []note.Note) {
+	logger("download all notes")
+	for idx, n := range notes {
+		page, err := client.DownloadPage(n.Meta.Id)
+		if err != nil {
+			fmt.Println("download failed")
 		}
-	}
+		n.Content = tomarkdown.ToMarkdown(page)
+		n.Dump("./cache")
 
-	logger("   Done")
+		msg := fmt.Sprintf("downloading...%d/%d", idx+1, len(notes))
+		logger(msg)
+	}
 }
 
 func main() {
-	logger("Start blog-crawler...")
-	notes, _ := getNotes()
-	cacheNotes(notes, All)
+	datasetId := "deba983740544616a2b8b399087ad180"
+	notes, _ := getNotes(datasetId)
+	downloadNotes(notes)
 }
